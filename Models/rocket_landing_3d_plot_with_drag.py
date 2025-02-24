@@ -139,15 +139,8 @@ def plot_trajectories(X_i, U_i, t_f, K):
 
 def plot_nu_norm(all_nu):
     """
-    Plots the Euclidean (L2) norm of each row in 'all_nu' 
-    against its iteration index. If 'all_nu' is 1D, 
-    we treat each element as a scalar nu for that iteration.
-    
+    Plots the 2-norm of virtual control nu  against its iteration index. 
     Parameters
-    ----------
-    all_nu : np.ndarray
-        - 1D array of shape (N,) or 
-        - 2D array of shape (N, D).
     """
     # Check dimensions
     if all_nu.ndim == 1:
