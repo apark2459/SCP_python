@@ -35,7 +35,7 @@ class SCProblem:
         self.par['weight_sigma'] = cvx.Parameter(nonneg=True)
         self.par['weight_nu'] = cvx.Parameter(nonneg=True)
         self.par['tr_radius'] = cvx.Parameter(nonneg=True)
-        self.par['weight_mass'] = cvx.Parameter(nonneg=True)
+        # self.par['weight_mass'] = cvx.Parameter(nonneg=True)
 
         # Constraints:
         constraints = []
@@ -66,8 +66,7 @@ class SCProblem:
         # Objective:
         model_objective = m.get_objective(self.var['X'], self.var['U'], self.par['X_last'], self.par['U_last'])
         sc_objective = cvx.Minimize(
-            -self.par['weight_mass'] * self.var['X'][0, -1]
-            + self.par['weight_nu'] * cvx.norm(self.var['nu'], 1)
+            self.par['weight_nu'] * cvx.norm(self.var['nu'], 1)
         )
 
         objective = sc_objective if model_objective is None else sc_objective + model_objective

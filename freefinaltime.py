@@ -56,7 +56,7 @@ for it in range(iterations):
 
     problem.set_parameters(A_bar=A_bar, B_bar=B_bar, C_bar=C_bar, S_bar=S_bar, z_bar=z_bar, G_bar=G_bar, H_bar=H_bar,
                            X_last=X, U_last=U, sigma_last=sigma,
-                           weight_nu=w_nu, weight_sigma=w_sigma, tr_radius=tr_radius, weight_mass=w_mass)
+                           weight_nu=w_nu, weight_sigma=w_sigma, tr_radius=tr_radius)
 
     while True:
         error = problem.solve(verbose=verbose_solver, solver=solver, max_iters=200)

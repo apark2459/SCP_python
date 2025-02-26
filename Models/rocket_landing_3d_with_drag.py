@@ -14,6 +14,7 @@ class Model:
     # Mass
     m_wet = 15000.  # 15000 kg
     m_dry = 10000.  # 10000 kg
+    w_mass = 100 # final mass penalty weight
 
     # Flight time guess
     t_f_guess = 15.  # 15 s
@@ -28,6 +29,7 @@ class Model:
     # Angles
     max_angle = 15.
     glidelslope_angle = 80.
+    final_angle = 1.
 
     cos_theta_max = np.cos(np.deg2rad(max_angle))
     tan_gamma_gs = np.tan(np.deg2rad(glidelslope_angle))
@@ -54,16 +56,20 @@ class Model:
     alpha_m = 1 / (300 * 9.81)  # 1 / (300 * 9.81) [s/m]
 
     def set_random_initial_state(self):
-        self.r_I_init[0] = 500. # 500
-        self.r_I_init[1] = 0.
-        self.r_I_init[2] = 500.
-        # self.r_I_init[0:2] = np.random.uniform(-300, 300, size=2)
+        self.r_I_init[0:2] = np.random.uniform(-300, 300, size=2)
 
-        # self.v_I_init[2] = np.random.uniform(-100, -60)
-        # self.v_I_init[0:2] = np.random.uniform(-0.5, -0.2, size=2) * self.r_I_init[0:2]
-        self.v_I_init[0] = 0.
-        self.v_I_init[1] = 50.
-        self.v_I_init[2] = -50.
+        self.v_I_init[2] = np.random.uniform(-100, -60)
+        self.v_I_init[0:2] = np.random.uniform(-0.5, -0.2, size=2) * self.r_I_init[0:2]
+
+    
+    def set_initial_state(self):
+        self.r_I_init[0] = 500. # 500 m
+        self.r_I_init[1] = 0. # 0 m
+        self.r_I_init[2] = 500. # 500 m
+
+        self.v_I_init[0] = 0. # 0 m/s
+        self.v_I_init[1] = 50. # 50 m/s
+        self.v_I_init[2] = -50. # -50 m/s
 
 
     # ------------------------------------------ Start normalization stuff
@@ -74,7 +80,8 @@ class Model:
         and (it seems) precision is lost in the dynamics.
         """
 
-        self.set_random_initial_state()
+        # self.set_random_initial_state() # Random initial state
+        self.set_initial_state() # Fixed initial state
 
         self.x_init = np.concatenate(((self.m_wet,), self.r_I_init, self.v_I_init))
         self.x_final = np.concatenate(((self.m_dry,), self.r_I_final, self.v_I_final))
@@ -214,8 +221,9 @@ class Model:
         :param U_last_p: cvx parameter for last inputs
         :return: A cvx objective function.
         """
-        # return cvx.Minimize(1e5 * cvx.sum(self.s_prime))
-        return None
+        # Maximize final mass
+        cost = -self.w_mass * X_v[0, -1]
+        return cvx.Minimize(cost)
 
     def get_constraints(self, X_v, U_v, Gamma_v, X_last_p, U_last_p):
         """
@@ -233,7 +241,7 @@ class Model:
             X_v[1:4, 0] == self.x_init[1:4],
             X_v[4:7, 0] == self.x_init[4:7],
             X_v[1:, -1] == self.x_final[1:],
-            np.cos(np.deg2rad(1)) * cvx.norm(U_v[:, -1]) <= U_v[-1,-1] # Final thrust must be vertical
+            np.cos(np.deg2rad(1)) * cvx.norm(U_v[:, -1]) <= U_v[2,-1] # Final thrust must be vertical...could replace norm(U_v[:, -1]) with Gamma_v[-1] and get same solution
         ]
 
         constraints += [
@@ -241,7 +249,6 @@ class Model:
             X_v[0, :] >= self.m_dry,  # lower bound on mass
             # cvx.norm(X_v[1:3, :], axis=0) <= X_v[3, :] / self.tan_gamma_gs,  # glideslope (gamma_gs defined from horizontal)
             cvx.norm(X_v[1:3, :], axis=0) <= X_v[3, :] * self.tan_gamma_gs,  # glideslope (gamma_gs defined from vertical)
-
 
             # Control constraints:
             self.cos_theta_max * Gamma_v <= U_v[2, :],
